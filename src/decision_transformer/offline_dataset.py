@@ -11,6 +11,8 @@ from einops import rearrange
 from torch.utils.data import Dataset
 
 
+
+
 class TrajectoryReader():
     '''
     The trajectory reader is responsible for reading trajectories from a file.
@@ -78,7 +80,8 @@ class TrajectoryDataset(Dataset):
         # check whether observations are flat or an image
         if observations.shape[-1] == 3:
             self.observation_type = 'index'
-        elif observations.shape[-1] == 20:
+        # todo: get this information from a config file corresponding to the run, e.g. InterruptableEnv has 22 one_hot dims
+        elif observations.shape[-1] >= 20:
             self.observation_type = 'one_hot'
         else:
             raise ValueError(
