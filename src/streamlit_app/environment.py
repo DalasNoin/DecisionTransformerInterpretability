@@ -14,9 +14,19 @@ from src.utils import pad_tensor
 def get_env_and_dt(model_path):
 
     # we need to one if the env was one hot encoded. Some tech debt here.
-    state_dict = t.load(model_path)
+    print(model_path)
+
+    state_dict = t.load(model_path, map_location=t.device("cpu"))
+    if "model_state_dict" in state_dict:
+        new_model = True
+        state_embedding_name = "state_embedding.weight"
+        state_dict = state_dict["model_state_dict"]
+    else:
+        new_model = False
+        state_embedding_name = "state_encoder.weight"
+
     one_hot_encoded = not (
-        state_dict["state_encoder.weight"].shape[-1] % 20)  # hack for now
+        state_dict[state_embedding_name].shape[-1] % 20)  # hack for now
     # list all mini grid envs
     minigrid_envs = [i for i in gym.envs.registry.keys() if "MiniGrid" in i]
     # find the env id in the path
@@ -32,10 +42,10 @@ def get_env_and_dt(model_path):
     # env_id = 'MiniGrid-Dynamic-Obstacles-8x8-v0'
     if one_hot_encoded:
         view_size = int(
-            math.sqrt(state_dict["state_encoder.weight"].shape[-1] // 20))
+            math.sqrt(state_dict[state_embedding_name].shape[-1] // 20))
     else:
         view_size = int(
-            math.sqrt(state_dict["state_encoder.weight"].shape[-1] // 3))
+            math.sqrt(state_dict[state_embedding_name].shape[-1] // 3))
 
     env = make_env(
         env_id,
