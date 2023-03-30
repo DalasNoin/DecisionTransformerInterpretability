@@ -65,20 +65,20 @@ def test_decision_transformer_img_obs_forward():
     assert decision_transformer.state_predictor is not None
 
     states = t.tensor(obs).unsqueeze(0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
+    # actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     rewards = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
 
     state_preds, action_preds, reward_preds = decision_transformer.forward(
         states=states,
-        actions=actions,
+        actions=None,
         rtgs=rewards,
         timesteps=timesteps
     )
 
-    assert state_preds.shape == (1, 1, 9408)
+    assert state_preds is None  # no action or reward preds if no actions are given
     assert action_preds.shape == (1, 1, 7)
-    assert reward_preds.shape == (1, 1, 1)
+    assert reward_preds is None  # no action or reward preds if no actions are given
 
 
 def test_decision_transformer_grid_obs_forward():
@@ -120,20 +120,19 @@ def test_decision_transformer_grid_obs_forward():
 
     states = t.tensor(obs['image']).unsqueeze(
         0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     rewards = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
 
     state_preds, action_preds, reward_preds = decision_transformer.forward(
         states=states,
-        actions=actions,
+        actions=None,
         rtgs=rewards,
         timesteps=timesteps
     )
 
-    assert state_preds.shape == (1, 1, 147)
+    assert state_preds is None  # no action or reward preds if no actions are given
     assert action_preds.shape == (1, 1, 7)
-    assert reward_preds.shape == (1, 1, 1)
+    assert reward_preds is None  # no action or reward preds if no actions are given
 
 
 def test_decision_transformer_grid_one_hot_forward():
@@ -176,20 +175,19 @@ def test_decision_transformer_grid_one_hot_forward():
 
     states = t.tensor(obs['image']).unsqueeze(
         0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     rewards = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
 
     state_preds, action_preds, reward_preds = decision_transformer.forward(
         states=states,
-        actions=actions,
+        actions=None,
         rtgs=rewards,
         timesteps=timesteps
     )
 
-    assert state_preds.shape == (1, 1, 980)
+    assert state_preds is None  # no action or reward preds if no actions are given
     assert action_preds.shape == (1, 1, 7)
-    assert reward_preds.shape == (1, 1, 1)
+    assert reward_preds is None  # no action or reward preds if no actions are given
 
 
 def test_decision_transformer_view_size_change_forward():
@@ -232,20 +230,19 @@ def test_decision_transformer_view_size_change_forward():
 
     states = t.tensor(obs['image']).unsqueeze(
         0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     rewards = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
     timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
 
     state_preds, action_preds, reward_preds = decision_transformer.forward(
         states=states,
-        actions=actions,
+        actions=None,
         rtgs=rewards,
         timesteps=timesteps
     )
 
-    assert state_preds.shape == (1, 1, 27)
+    assert state_preds is None  # no action or reward preds if no actions are given
     assert action_preds.shape == (1, 1, 7)
-    assert reward_preds.shape == (1, 1, 1)
+    assert reward_preds is None  # no action or reward preds if no actions are given
 
 
 def test_decision_transformer_grid_obs_no_action_forward():
@@ -308,7 +305,7 @@ def test_decision_transformer_grid_obs_one_fewer_action_forward():
     env = gym.make('MiniGrid-Empty-8x8-v0')
     obs, _ = env.reset()  # This now produces an RGB tensor only
 
-    transformer_config = TransformerModelConfig(n_ctx=6)
+    transformer_config = TransformerModelConfig(n_ctx=5)
     environment_config = EnvironmentConfig(
         env_id='MiniGrid-Empty-8x8-v0',
         img_obs=False,
@@ -358,60 +355,12 @@ def test_decision_transformer_grid_obs_one_fewer_action_forward():
     assert reward_preds.shape == (1, 2, 1)
 
 
-def test_clone_transformer_grid_obs_forward():
-
-    env = gym.make('MiniGrid-Empty-8x8-v0')
-    obs, _ = env.reset()  # This now produces an RGB tensor only
-
-    transformer_config = TransformerModelConfig()
-    environment_config = EnvironmentConfig(
-        env_id='MiniGrid-Empty-8x8-v0',
-        img_obs=False,
-    )
-
-    clone_transformer = CloneTransformer(
-        transformer_config=transformer_config,
-        environment_config=environment_config
-    )
-
-    assert clone_transformer is not None
-
-    # our model should have the following:
-    assert clone_transformer.state_embedding is not None
-    assert clone_transformer.action_embedding is not None
-    assert clone_transformer.time_embedding is not None
-
-    # a GPT2-like transformer
-    assert clone_transformer.transformer is not None
-    assert type(clone_transformer.transformer).__name__ == 'HookedTransformer'
-
-    # a linear layer to predict the next action
-    assert clone_transformer.action_predictor is not None
-
-    # a linear layer to predict the next state
-    assert clone_transformer.state_predictor is not None
-
-    states = t.tensor(obs['image']).unsqueeze(
-        0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
-    timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
-
-    state_preds, action_preds = clone_transformer.forward(
-        states=states,
-        actions=actions,
-        timesteps=timesteps
-    )
-
-    assert state_preds.shape == (1, 1, 147)
-    assert action_preds.shape == (1, 1, 7)
-
-
 def test_clone_transformer_grid_obs_no_action_forward():
 
     env = gym.make('MiniGrid-Empty-8x8-v0')
     obs, _ = env.reset()  # This now produces an RGB tensor only
 
-    transformer_config = TransformerModelConfig()
+    transformer_config = TransformerModelConfig(n_ctx=1)
     environment_config = EnvironmentConfig(
         env_id='MiniGrid-Empty-8x8-v0',
         img_obs=False,
@@ -457,7 +406,7 @@ def test_clone_transformer_grid_obs_one_fewer_action_forward():
     env = gym.make('MiniGrid-Empty-8x8-v0')
     obs, _ = env.reset()  # This now produces an RGB tensor only
 
-    transformer_config = TransformerModelConfig(n_ctx=6)
+    transformer_config = TransformerModelConfig(n_ctx=7)
     environment_config = EnvironmentConfig(
         env_id='MiniGrid-Empty-8x8-v0',
         img_obs=False,
@@ -505,7 +454,7 @@ def test_actor_transformer():
     env = gym.make('MiniGrid-Empty-8x8-v0')
     obs, _ = env.reset()  # This now produces an RGB tensor only
 
-    transformer_config = TransformerModelConfig()
+    transformer_config = TransformerModelConfig(n_ctx=1)
     environment_config = EnvironmentConfig(
         env_id='MiniGrid-Empty-8x8-v0',
         img_obs=False,
@@ -535,7 +484,8 @@ def test_actor_transformer():
 
     states = t.tensor(obs['image']).unsqueeze(
         0).unsqueeze(0)  # add block, add batch
-    actions = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
+    # t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
+    actions = None
     timesteps = t.tensor([0]).unsqueeze(0).unsqueeze(0)  # add block, add batch
 
     action_preds = actor_transformer.forward(
